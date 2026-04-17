@@ -24,3 +24,39 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* app/globals.css */
+
+/* Mặc định cho ô trống */
+.react-calendar-heatmap .color-empty {
+  fill: #ebedf0;
+}
+
+/* Định nghĩa màu sắc cho PROBLEMS heatmap (Xanh) */
+.react-calendar-heatmap .color-problem-1 { fill: #c6e48b; }
+.react-calendar-heatmap .color-problem-2 { fill: #7bc96f; }
+.react-calendar-heatmap .color-problem-3 { fill: #239a3b; }
+.react-calendar-heatmap .color-problem-4 { fill: #196127; }
+
+/* Định nghĩa màu sắc cho CONTESTS heatmap (Vàng) */
+.react-calendar-heatmap .color-contest-1 { fill: #f8cc1c; }
+.react-calendar-heatmap .color-contest-2 { fill: #b97a0c; }
+
+/* Các định dạng cơ bản khác cho heatmap */
+.react-calendar-heatmap text {
+  font-size: 10px;
+  fill: #aaa;
+}
+
+.react-calendar-heatmap rect {
+  rx: 2; /* Bo góc ô */
+  ry: 2;
+}
+
+/* Hover effect cho ô */
+.react-calendar-heatmap rect:hover {
+  stroke: #555;
+  stroke-width: 1px;
+  cursor: pointer;
+}
