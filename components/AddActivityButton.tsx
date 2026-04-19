@@ -1,23 +1,41 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, X, Brain, Trophy, Loader2 } from 'lucide-react';
+import { Plus, X, Brain, Trophy, Loader2, Search } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 
-// Danh sách Tag mặc định
-const AVAILABLE_TAGS = [
-  'Jump Pointers', 
-  'DSU Rollback', 
-  'Mo\'s Algorithm', 
-  'Aho-Corasick', 
-  'DP', 
-  'Graph', 
-  'Math', 
-  'Greedy', 
-  'Binary Search',
-  'Segment Tree'
+// Cấu trúc lại danh sách Tag theo từng block chủ đề
+const TAG_CATEGORIES = [
+  {
+    category: 'Kỹ thuật cơ bản & Tư duy',
+    tags: ['Implementation', 'Brute Force', 'Greedy', 'Constructive Algorithms', 'Interactive', 'Two Pointers', 'Sliding Window', 'Prefix Sums', 'Bitmasks', 'Divide and Conquer', 'Meet-in-the-Middle', 'Backtracking']
+  },
+  {
+    category: 'Tìm kiếm & Sắp xếp',
+    tags: ['Binary Search', 'Ternary Search', 'Sorting']
+  },
+  {
+    category: 'Quy hoạch động (DP)',
+    tags: ['DP', 'DP on Trees', 'Digit DP', 'Bitmask DP', 'Convex Hull Trick']
+  },
+  {
+    category: 'Cấu trúc dữ liệu',
+    tags: ['Data Structures', 'Segment Tree', 'Fenwick Tree (BIT)', 'DSU (Disjoint Set Union)', 'DSU Rollback', 'Sparse Table', 'Mo\'s Algorithm', 'Treap / PBDS', 'Heavy-Light Decomposition (HLD)', 'Centroid Decomposition', 'Link-Cut Tree']
+  },
+  {
+    category: 'Đồ thị & Cây',
+    tags: ['Graph', 'Trees', 'DFS and Similar', 'Shortest Paths', 'Topological Sort', 'Minimum Spanning Tree (MST)', 'LCA (Lowest Common Ancestor)', 'Euler Tour', 'Jump Pointers', 'SCC (Strongly Connected Components)', 'Bipartite Matching', 'Flows', '2-SAT']
+  },
+  {
+    category: 'Xử lý Chuỗi',
+    tags: ['Strings', 'Hashing', 'String Matching', 'Trie', 'Aho-Corasick', 'Suffix Array', 'Suffix Automaton']
+  },
+  {
+    category: 'Toán học & Hình học',
+    tags: ['Math', 'Number Theory', 'Combinatorics', 'Probabilities', 'Geometry', 'Game Theory', 'Matrix Exponentiation', 'Sweepline', 'FFT', 'Chinese Remainder Theorem']
+  }
 ];
 
 export default function AddActivityButton() {
@@ -39,12 +57,29 @@ export default function AddActivityButton() {
   const [timeTaken, setTimeTaken] = useState<number | ''>(0);
   const [submissions, setSubmissions] = useState<number | ''>(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  // Trạng thái tìm kiếm Tag
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => 
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
+
+  // Logic lọc Tag dựa trên ô tìm kiếm
+  const filteredCategories = TAG_CATEGORIES.map(categoryObj => {
+    const query = tagSearchQuery.toLowerCase();
+    const matchCategory = categoryObj.category.toLowerCase().includes(query);
+    const matchingTags = categoryObj.tags.filter(tag => tag.toLowerCase().includes(query));
+    
+    // Nếu tên Category khớp -> hiển thị toàn bộ tag trong đó
+    if (matchCategory) return categoryObj;
+    // Nếu có tag khớp -> hiển thị Category với các tag khớp
+    if (matchingTags.length > 0) return { ...categoryObj, tags: matchingTags };
+    
+    return null;
+  }).filter(Boolean); // Bỏ các block null (không khớp)
 
   const handleSuccessAnimation = () => {
     const duration = 3 * 1000;
@@ -63,7 +98,8 @@ export default function AddActivityButton() {
   const resetForm = () => {
     setTitle(''); setLink(''); setNotes('');
     setSolvedCount(''); setRank('');
-    setRating('0'); setTimeTaken(0); setSubmissions(0); setSelectedTags([]);
+    setRating('0'); setTimeTaken(0); setSubmissions(0); 
+    setSelectedTags([]); setTagSearchQuery('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,20 +204,67 @@ export default function AddActivityButton() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-2">Tags / Dạng bài</label>
-                    <div className="flex flex-wrap gap-2">
-                      {AVAILABLE_TAGS.map(tag => (
-                        <button
-                          type="button"
-                          key={tag}
-                          onClick={() => toggleTag(tag)}
-                          className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedTags.includes(tag) ? 'bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'}`}
-                        >
-                          {tag}
-                        </button>
-                      ))}
+                  {/* KHU VỰC QUẢN LÝ TAGS MỚI */}
+                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                    
+                    {/* Hiển thị Tags đã chọn */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tags đã chọn ({selectedTags.length})</label>
+                      {selectedTags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 min-h-[40px]">
+                          {selectedTags.map(tag => (
+                            <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-200 dark:border-blue-800">
+                              {tag}
+                              <button type="button" onClick={() => toggleTag(tag)} className="hover:text-blue-900 dark:hover:text-blue-100 transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">Chưa có tag nào được chọn.</p>
+                      )}
                     </div>
+
+                    {/* Thanh tìm kiếm Tag */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Tìm kiếm Tag hoặc Dạng bài..." 
+                        value={tagSearchQuery}
+                        onChange={(e) => setTagSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+
+                    {/* Danh sách Tag theo Block (Có scroll nội bộ) */}
+                    <div className="max-h-60 overflow-y-auto space-y-5 pr-2 scrollbar-thin">
+                      {filteredCategories.length > 0 ? (
+                        filteredCategories.map((categoryObj: any, index: number) => (
+                          <div key={index}>
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-gray-200 dark:border-gray-600 pb-1">
+                              {categoryObj.category}
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {categoryObj.tags.map((tag: string) => (
+                                <button
+                                  type="button"
+                                  key={tag}
+                                  onClick={() => toggleTag(tag)}
+                                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedTags.includes(tag) ? 'bg-blue-500 border-blue-600 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">Không tìm thấy tag phù hợp.</p>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               )}
