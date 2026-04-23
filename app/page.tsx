@@ -10,7 +10,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 import Link from 'next/link';
 import { 
   Brain, Trophy, MoveRight, Loader2, Timer, Calendar, 
-  Trash2, Plus, X, Globe, Star, Clock 
+  Trash2, Plus, X, Globe, Star, Clock, LayoutDashboard, Swords
 } from 'lucide-react';
 import { format, subYears, eachDayOfInterval } from 'date-fns';
 import AddActivityButton from '@/components/AddActivityButton';
@@ -95,7 +95,6 @@ export default function Home() {
   // Form State cho Upcoming Contest
   const [upcTitle, setUpcTitle] = useState('');
   const [upcPlatform, setUpcPlatform] = useState('Codeforces');
-  // Đã tách riêng state cho Ngày và Giờ
   const [upcStartDate, setUpcStartDate] = useState('');
   const [upcStartTimeValue, setUpcStartTimeValue] = useState('');
   const [upcDuration, setUpcDuration] = useState<number | ''>(120);
@@ -103,7 +102,6 @@ export default function Home() {
 
   const fetchActivities = async () => {
     try {
-      // 1. Fetch Heatmap Data
       const q = query(collection(db, "cp_activities"));
       const snapshot = await getDocs(q);
       
@@ -138,7 +136,6 @@ export default function Home() {
       setProblemsData(fullProblemsArray);
       setContestsData(fullContestsArray);
 
-      // 2. Fetch Upcoming Contests
       const upcQ = query(collection(db, "upcoming_contests"));
       const upcSnapshot = await getDocs(upcQ);
       const upcList: any[] = [];
@@ -146,7 +143,6 @@ export default function Home() {
         upcList.push({ id: doc.id, ...doc.data() });
       });
 
-      // Lọc các contest chưa diễn ra và sort theo thời gian gần nhất
       const now = new Date().getTime();
       const validUpcoming = upcList
         .filter(c => new Date(c.startTime).getTime() > now)
@@ -182,7 +178,7 @@ export default function Home() {
       if (distance <= 0) {
         clearInterval(timer);
         setTimeLeft(null);
-        fetchActivities(); // Refresh để ẩn contest đã bắt đầu
+        fetchActivities();
       } else {
         setTimeLeft({
           d: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -202,14 +198,13 @@ export default function Home() {
     if (!upcTitle || !upcStartDate || !upcStartTimeValue || !upcDuration) return;
     setIsSubmittingUpcoming(true);
 
-    // Ghép Ngày và Giờ thành chuẩn ISO
     const combinedDateTime = `${upcStartDate}T${upcStartTimeValue}`;
 
     try {
       await addDoc(collection(db, "upcoming_contests"), {
         title: upcTitle.trim(),
         platform: upcPlatform,
-        startTime: combinedDateTime, // Đã được ghép hoàn chỉnh
+        startTime: combinedDateTime, 
         duration: Number(upcDuration),
         isRated: upcIsRated,
         timestamp: serverTimestamp()
@@ -217,9 +212,9 @@ export default function Home() {
       
       setIsAddingUpcoming(false);
       setUpcTitle(''); setUpcPlatform('Codeforces'); 
-      setUpcStartDate(''); setUpcStartTimeValue(''); // Reset state ngày giờ
+      setUpcStartDate(''); setUpcStartTimeValue(''); 
       setUpcDuration(120); setUpcIsRated(true);
-      fetchActivities(); // Refresh danh sách
+      fetchActivities(); 
     } catch (error) {
       alert("Lỗi khi thêm Contest!");
     } finally {
@@ -237,7 +232,6 @@ export default function Home() {
     }
   };
 
-  // --- HELPER STYLING PLATFORM ---
   const getPlatformColors = (platform: string) => {
     switch(platform) {
       case 'Codeforces': return 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
@@ -251,15 +245,36 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-8">
       <div className="max-w-7xl mx-auto space-y-10">
         
-        {/* HEADER */}
-        <header className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">CP Contribution</h1>
-            <p className="text-gray-500 mt-1">Những nỗ lực thầm lặng hôm nay sẽ được thời gian trả lời vào ngày mai.</p>
+        {/* --- TABS HEADER MỚI --- */}
+        <header className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">CP Contribution</h1>
+              <p className="text-gray-500 mt-1">Những nỗ lực thầm lặng hôm nay sẽ được thời gian trả lời vào ngày mai.</p>
+            </div>
+
+            {/* Điều hướng Tabs */}
+            <nav className="flex items-center p-1.5 bg-gray-200/50 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 w-full lg:w-auto overflow-x-auto">
+              <Link 
+                href="/" 
+                className="px-5 py-2.5 text-sm font-bold rounded-lg bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <Calendar className="w-4 h-4" /> Tổng quan
+              </Link>
+              <Link 
+                href="/dashboard" 
+                className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <LayoutDashboard className="w-4 h-4" /> Dashboard
+              </Link>
+              <Link 
+                href="/tower" 
+                className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <Swords className="w-4 h-4" /> Leo tháp
+              </Link>
+            </nav>
           </div>
-          <Link href="/dashboard" className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium text-sm shadow-sm">
-            Vào Dashboard <MoveRight className="w-4 h-4" />
-          </Link>
         </header>
 
         {loading ? (
@@ -443,7 +458,6 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Tách riêng Ngày, Giờ và Thời lượng ra 3 cột */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Ngày *</label>

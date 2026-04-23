@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Code2, Trophy, Flame, BrainCircuit, BarChart3, MoveRight } from 'lucide-react';
+// Đã xóa ArrowLeft, thêm Calendar, LayoutDashboard, Swords cho hệ thống Tab
+import { Loader2, Code2, Trophy, Flame, BrainCircuit, BarChart3, MoveRight, Calendar, LayoutDashboard, Swords } from 'lucide-react';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
@@ -155,14 +156,35 @@ export default function Dashboard() {
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-8">
       <div className="max-w-7xl mx-auto space-y-10">
         
-        {/* HEADER */}
-        <header className="flex items-center gap-4 border-b border-gray-200 dark:border-gray-800 pb-6">
-          <Link href="/" className="p-3 bg-white dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition shadow-sm">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Thống kê Tổng quan</h1>
-            <p className="text-gray-500 mt-1">Phân tích chuyên sâu về phong độ và kỹ năng.</p>
+        {/* --- TABS HEADER (Đã đồng bộ với trang chủ) --- */}
+        <header className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Thống kê Tổng quan</h1>
+              <p className="text-gray-500 mt-1">Phân tích chuyên sâu về phong độ và kỹ năng.</p>
+            </div>
+
+            {/* Điều hướng Tabs - Tab Dashboard đang được Active */}
+            <nav className="flex items-center p-1.5 bg-gray-200/50 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 w-full lg:w-auto overflow-x-auto">
+              <Link 
+                href="/" 
+                className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <Calendar className="w-4 h-4" /> Tổng quan
+              </Link>
+              <Link 
+                href="/dashboard" 
+                className="px-5 py-2.5 text-sm font-bold rounded-lg bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <LayoutDashboard className="w-4 h-4" /> Dashboard
+              </Link>
+              <Link 
+                href="/tower" 
+                className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <Swords className="w-4 h-4" /> Leo tháp
+              </Link>
+            </nav>
           </div>
         </header>
 
@@ -277,7 +299,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* SECTION 4: DANH SÁCH BÀI TẬP (Có thể Click) */}
+        {/* SECTION 4: DANH SÁCH BÀI TẬP */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* CỘT CODEFORCES */}
