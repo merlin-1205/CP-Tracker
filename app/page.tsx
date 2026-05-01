@@ -10,7 +10,7 @@ import 'react-tooltip/dist/react-tooltip.css';
 import Link from 'next/link';
 import { 
   Brain, Trophy, MoveRight, Loader2, Timer, Calendar, 
-  Trash2, Plus, X, Globe, Star, Clock, LayoutDashboard, Swords
+  Trash2, Plus, X, Globe, Star, Clock, LayoutDashboard, Swords, StickyNote, Hash
 } from 'lucide-react';
 import { format, subYears, eachDayOfInterval } from 'date-fns';
 import AddActivityButton from '@/components/AddActivityButton';
@@ -66,7 +66,8 @@ const HeatmapBox = ({ title, icon: Icon, data, getTooltip, getColorClass }: any)
           }}
           onClick={(value) => {
             if (value && value.date && value.count > 0) {
-              window.open(`/details/${value.date}`, '_blank');
+              // Sử dụng window.location.href để chuyển trang an toàn và không bị chặn
+              window.location.href = `/details/${value.date}`;
             }
           }}
         />
@@ -98,10 +99,12 @@ export default function Home() {
   const [upcStartDate, setUpcStartDate] = useState('');
   const [upcStartTimeValue, setUpcStartTimeValue] = useState('');
   const [upcDuration, setUpcDuration] = useState<number | ''>(120);
+  const [upcProblemCount, setUpcProblemCount] = useState<number | ''>(''); 
   const [upcIsRated, setUpcIsRated] = useState(true);
 
   const fetchActivities = async () => {
     try {
+      // 1. Fetch Heatmap Data
       const q = query(collection(db, "cp_activities"));
       const snapshot = await getDocs(q);
       
@@ -136,6 +139,7 @@ export default function Home() {
       setProblemsData(fullProblemsArray);
       setContestsData(fullContestsArray);
 
+      // 2. Fetch Upcoming Contests
       const upcQ = query(collection(db, "upcoming_contests"));
       const upcSnapshot = await getDocs(upcQ);
       const upcList: any[] = [];
@@ -178,7 +182,7 @@ export default function Home() {
       if (distance <= 0) {
         clearInterval(timer);
         setTimeLeft(null);
-        fetchActivities();
+        fetchActivities(); 
       } else {
         setTimeLeft({
           d: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -206,20 +210,29 @@ export default function Home() {
         platform: upcPlatform,
         startTime: combinedDateTime, 
         duration: Number(upcDuration),
+        problemCount: Number(upcProblemCount) || 0,
         isRated: upcIsRated,
         timestamp: serverTimestamp()
       });
       
       setIsAddingUpcoming(false);
-      setUpcTitle(''); setUpcPlatform('Codeforces'); 
-      setUpcStartDate(''); setUpcStartTimeValue(''); 
-      setUpcDuration(120); setUpcIsRated(true);
+      resetUpcForm();
       fetchActivities(); 
     } catch (error) {
       alert("Lỗi khi thêm Contest!");
     } finally {
       setIsSubmittingUpcoming(false);
     }
+  };
+
+  const resetUpcForm = () => {
+    setUpcTitle(''); 
+    setUpcPlatform('Codeforces'); 
+    setUpcStartDate(''); 
+    setUpcStartTimeValue(''); 
+    setUpcDuration(120); 
+    setUpcProblemCount('');
+    setUpcIsRated(true);
   };
 
   const handleDeleteUpcoming = async (id: string, title: string) => {
@@ -262,6 +275,12 @@ export default function Home() {
                 <Calendar className="w-4 h-4" /> Tổng quan
               </Link>
               <Link 
+                href="/notes" 
+                className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <StickyNote className="w-4 h-4" /> Notes
+              </Link>
+              <Link 
                 href="/dashboard" 
                 className="px-5 py-2.5 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 whitespace-nowrap"
               >
@@ -293,12 +312,17 @@ export default function Home() {
                     <Timer className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 bg-white/20 text-xs font-bold uppercase rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="px-2 py-0.5 bg-white/20 text-[10px] font-bold uppercase rounded backdrop-blur-sm">
                         {upcomingContests[0].platform}
                       </span>
+                      {upcomingContests[0].problemCount > 0 && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold bg-green-500/30 px-2 py-0.5 rounded border border-green-400/30">
+                          <Hash className="w-3 h-3" /> {upcomingContests[0].problemCount} bài
+                        </span>
+                      )}
                       {upcomingContests[0].isRated && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-yellow-300">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-yellow-300 bg-yellow-400/20 px-2 py-0.5 rounded border border-yellow-400/30">
                           <Star className="w-3 h-3 fill-yellow-300" /> Rated
                         </span>
                       )}
@@ -315,22 +339,22 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col items-center bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm min-w-[70px]">
                     <span className="text-2xl font-black">{String(timeLeft.d).padStart(2, '0')}</span>
-                    <span className="text-xs font-medium text-blue-100 uppercase">Ngày</span>
+                    <span className="text-[10px] font-medium text-blue-100 uppercase">Ngày</span>
                   </div>
                   <span className="text-2xl font-bold text-blue-200">:</span>
                   <div className="flex flex-col items-center bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm min-w-[70px]">
                     <span className="text-2xl font-black">{String(timeLeft.h).padStart(2, '0')}</span>
-                    <span className="text-xs font-medium text-blue-100 uppercase">Giờ</span>
+                    <span className="text-[10px] font-medium text-blue-100 uppercase">Giờ</span>
                   </div>
                   <span className="text-2xl font-bold text-blue-200">:</span>
                   <div className="flex flex-col items-center bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm min-w-[70px]">
                     <span className="text-2xl font-black">{String(timeLeft.m).padStart(2, '0')}</span>
-                    <span className="text-xs font-medium text-blue-100 uppercase">Phút</span>
+                    <span className="text-[10px] font-medium text-blue-100 uppercase">Phút</span>
                   </div>
                   <span className="text-2xl font-bold text-blue-200">:</span>
                   <div className="flex flex-col items-center bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm min-w-[70px]">
                     <span className="text-2xl font-black">{String(timeLeft.s).padStart(2, '0')}</span>
-                    <span className="text-xs font-medium text-blue-100 uppercase">Giây</span>
+                    <span className="text-[10px] font-medium text-blue-100 uppercase">Giây</span>
                   </div>
                 </div>
               </div>
@@ -375,39 +399,44 @@ export default function Home() {
 
               {upcomingContests.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcomingContests.map((contest) => (
-                    <div key={contest.id} className={`p-5 rounded-xl border relative group transition-all ${getPlatformColors(contest.platform)}`}>
+                  {upcomingContests.map((c) => (
+                    <div key={c.id} className={`p-5 rounded-xl border relative group transition-all bg-gray-50 dark:bg-gray-900/50 ${getPlatformColors(c.platform)}`}>
                       <button 
-                        onClick={() => handleDeleteUpcoming(contest.id, contest.title)}
-                        className="absolute top-4 right-4 p-1.5 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40 rounded transition-all"
+                        onClick={() => handleDeleteUpcoming(c.id, c.title)}
+                        className="absolute top-4 right-4 p-1.5 opacity-0 group-hover:opacity-100 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40 rounded transition-all"
                         title="Xóa khỏi hàng đợi"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                       
                       <div className="pr-8">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-bold uppercase opacity-80 flex items-center gap-1">
-                            <Globe className="w-3 h-3" /> {contest.platform}
+                        <div className="flex items-center gap-2 mb-2 text-[10px] font-bold opacity-70">
+                          <span className="uppercase flex items-center gap-1">
+                            <Globe className="w-3 h-3" /> {c.platform}
                           </span>
-                          {contest.isRated && (
-                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 text-[10px] font-bold uppercase rounded flex items-center gap-1 border border-yellow-200 dark:border-yellow-800">
-                              <Star className="w-3 h-3" /> Rated
+                          {c.problemCount > 0 && (
+                            <span className="bg-gray-200 dark:bg-gray-700 px-1.5 rounded text-gray-800 dark:text-gray-200">
+                              {c.problemCount} bài
+                            </span>
+                          )}
+                          {c.isRated && (
+                            <span className="text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-current" /> Rated
                             </span>
                           )}
                         </div>
-                        <h3 className="font-bold text-lg mb-4 line-clamp-2">{contest.title}</h3>
+                        <h3 className="font-bold text-lg mb-4 line-clamp-2">{c.title}</h3>
                         
                         <div className="space-y-1.5">
                           <p className="text-sm flex items-center gap-2 font-medium opacity-90">
                             <Calendar className="w-4 h-4" /> 
-                            {format(new Date(contest.startTime), 'dd/MM/yyyy')}
+                            {format(new Date(c.startTime), 'dd/MM/yyyy')}
                           </p>
                           <p className="text-sm flex items-center gap-2 font-medium opacity-90">
                             <Clock className="w-4 h-4" /> 
-                            {format(new Date(contest.startTime), 'HH:mm')} 
+                            {format(new Date(c.startTime), 'HH:mm')} 
                             <span className="opacity-50">|</span> 
-                            {contest.duration} phút
+                            {c.duration} phút
                           </p>
                         </div>
                       </div>
@@ -431,7 +460,7 @@ export default function Home() {
       {/* --- MODAL THÊM UPCOMING CONTEST --- */}
       {isAddingUpcoming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-indigo-500" /> Lên lịch Contest
@@ -458,27 +487,32 @@ export default function Home() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-500 mb-1">Ngày *</label>
                   <input required type="date" value={upcStartDate} onChange={(e) => setUpcStartDate(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
                 </div>
-                <div>
+                <div className="col-span-1">
                   <label className="block text-xs font-medium text-gray-500 mb-1">Giờ *</label>
                   <input required type="time" value={upcStartTimeValue} onChange={(e) => setUpcStartTimeValue(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Phút *</label>
-                  <input required type="number" min="1" value={upcDuration} onChange={(e) => setUpcDuration(e.target.value ? Number(e.target.value) : '')} placeholder="120" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
+                <div className="col-span-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Số bài</label>
+                  <input type="number" min="1" value={upcProblemCount} onChange={(e) => setUpcProblemCount(e.target.value ? Number(e.target.value) : '')} placeholder="VD: 6" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Thời lượng (Phút) *</label>
+                <input required type="number" min="1" value={upcDuration} onChange={(e) => setUpcDuration(e.target.value ? Number(e.target.value) : '')} placeholder="120" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none" />
               </div>
 
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <input type="checkbox" checked={upcIsRated} onChange={(e) => setUpcIsRated(e.target.checked)} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
-                <span className="font-medium text-gray-700 dark:text-gray-300">Contest này có tính điểm (Rated)</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">Contest này có tính điểm (Rated)</span>
               </label>
 
-              <button disabled={isSubmittingUpcoming || !upcTitle || !upcStartDate || !upcStartTimeValue} className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2">
+              <button disabled={isSubmittingUpcoming || !upcTitle || !upcStartDate || !upcStartTimeValue || !upcDuration} className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2">
                 {isSubmittingUpcoming ? <Loader2 className="w-5 h-5 animate-spin" /> : "ĐƯA VÀO HÀNG ĐỢI"}
               </button>
             </form>
